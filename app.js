@@ -143,11 +143,15 @@ const progressPercent = document.querySelector("#progress-percent");
 const ringProgress = document.querySelector("#ring-progress");
 const resetButton = document.querySelector("#reset-week");
 const themeToggle = document.querySelector("#theme-toggle");
+const weekSelect = document.querySelector("#week-select");
+const currentWeekButton = document.querySelector("#current-week");
 
-const stateKey = `weekly-routine:${getIsoWeekKey(new Date())}`;
+const currentWeekKey = getIsoWeekKey(new Date());
+const weekIndexKey = "weekly-routine:weeks";
 const themeKey = "weekly-routine:theme";
 const ringLength = 314;
 
+let selectedWeekKey = currentWeekKey;
 let state = loadState();
 
 function getIsoWeekKey(date) {
@@ -173,16 +177,52 @@ function getReadableWeek(date) {
   return `${formatter.format(monday)} - ${formatter.format(sunday)}`;
 }
 
-function loadState() {
+function getDateFromIsoWeekKey(weekKey) {
+  const [yearText, weekText] = weekKey.split("-W");
+  const year = Number(yearText);
+  const week = Number(weekText);
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const dayNumber = simple.getUTCDay() || 7;
+
+  if (dayNumber <= 4) {
+    simple.setUTCDate(simple.getUTCDate() - dayNumber + 1);
+  } else {
+    simple.setUTCDate(simple.getUTCDate() + 8 - dayNumber);
+  }
+
+  return new Date(simple.getUTCFullYear(), simple.getUTCMonth(), simple.getUTCDate());
+}
+
+function getStateKey(weekKey) {
+  return `weekly-routine:${weekKey}`;
+}
+
+function loadState(weekKey = selectedWeekKey) {
   try {
-    return JSON.parse(localStorage.getItem(stateKey)) || {};
+    return JSON.parse(localStorage.getItem(getStateKey(weekKey))) || {};
   } catch {
     return {};
   }
 }
 
 function saveState() {
-  localStorage.setItem(stateKey, JSON.stringify(state));
+  localStorage.setItem(getStateKey(selectedWeekKey), JSON.stringify(state));
+  saveWeekToIndex(selectedWeekKey);
+  renderWeekOptions();
+}
+
+function getWeekIndex() {
+  try {
+    return JSON.parse(localStorage.getItem(weekIndexKey)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveWeekToIndex(weekKey) {
+  const weeks = new Set(getWeekIndex());
+  weeks.add(weekKey);
+  localStorage.setItem(weekIndexKey, JSON.stringify([...weeks].sort().reverse()));
 }
 
 function taskId(sectionIndex, taskIndex) {
@@ -190,6 +230,8 @@ function taskId(sectionIndex, taskIndex) {
 }
 
 function renderRoutine() {
+  grid.innerHTML = "";
+
   routine.forEach((section, sectionIndex) => {
     const sectionNode = sectionTemplate.content.firstElementChild.cloneNode(true);
     sectionNode.querySelector(".section-number").textContent = sectionIndex + 1;
@@ -202,12 +244,25 @@ function renderRoutine() {
       const taskState = state[id] || {};
       const taskNode = taskTemplate.content.firstElementChild.cloneNode(true);
       const checkbox = taskNode.querySelector("input");
+      const reflectionField = taskNode.querySelector(".reflection-field");
+      const textarea = taskNode.querySelector("textarea");
+      const isReflectionTask = section.title === "Reflexe";
 
       checkbox.id = `${id}-done`;
       checkbox.checked = Boolean(taskState.done);
       taskNode.querySelector(".task-check").setAttribute("for", checkbox.id);
       taskNode.querySelector(".task-text").textContent = task.text;
       taskNode.querySelector(".task-note").textContent = task.note;
+
+      if (isReflectionTask) {
+        textarea.value = taskState.reflection || "";
+        textarea.addEventListener("input", () => {
+          state[id] = { ...state[id], reflection: textarea.value };
+          saveState();
+        });
+      } else {
+        reflectionField.remove();
+      }
 
       checkbox.addEventListener("change", () => {
         state[id] = { ...state[id], done: checkbox.checked };
@@ -220,6 +275,32 @@ function renderRoutine() {
 
     grid.append(sectionNode);
   });
+}
+
+function renderWeekOptions() {
+  const weeks = new Set(getWeekIndex());
+  weeks.add(currentWeekKey);
+  weeks.add(selectedWeekKey);
+
+  weekSelect.innerHTML = "";
+
+  [...weeks].sort().reverse().forEach((weekKey) => {
+    const option = document.createElement("option");
+    option.value = weekKey;
+    option.textContent = `${weekKey} · ${getReadableWeek(getDateFromIsoWeekKey(weekKey))}`;
+    weekSelect.append(option);
+  });
+
+  weekSelect.value = selectedWeekKey;
+}
+
+function switchWeek(weekKey) {
+  selectedWeekKey = weekKey;
+  state = loadState(selectedWeekKey);
+  weekLabel.textContent = getReadableWeek(getDateFromIsoWeekKey(selectedWeekKey));
+  renderWeekOptions();
+  renderRoutine();
+  updateProgress();
 }
 
 function updateProgress() {
@@ -235,15 +316,13 @@ function updateProgress() {
 }
 
 function resetCurrentWeek() {
-  if (!confirm("Vyčistit checklist a poznámky pro aktuální týden?")) {
+  if (!confirm("Vyčistit checklist a reflexní zápisy pro vybraný týden?")) {
     return;
   }
 
   state = {};
-  localStorage.removeItem(stateKey);
-  document.querySelectorAll(".task-check input").forEach((checkbox) => {
-    checkbox.checked = false;
-  });
+  localStorage.removeItem(getStateKey(selectedWeekKey));
+  renderRoutine();
   updateProgress();
 }
 
@@ -263,12 +342,16 @@ function initializeTheme() {
   applyTheme(prefersDark ? "dark" : "light");
 }
 
+saveWeekToIndex(currentWeekKey);
 weekLabel.textContent = getReadableWeek(new Date());
 initializeTheme();
+renderWeekOptions();
 renderRoutine();
 updateProgress();
 
 resetButton.addEventListener("click", resetCurrentWeek);
+weekSelect.addEventListener("change", () => switchWeek(weekSelect.value));
+currentWeekButton.addEventListener("click", () => switchWeek(currentWeekKey));
 themeToggle.addEventListener("click", () => {
   const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
   applyTheme(current === "dark" ? "light" : "dark");

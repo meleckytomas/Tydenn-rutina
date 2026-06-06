@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260606-1013">
+    <link rel="stylesheet" href="styles.css?v=20260606-1035">
   </head>
   <body>
     <div class="app-shell">
@@ -79,13 +79,18 @@
         <div class="section-heading">
           <p class="eyebrow">Checklist</p>
           <h2>Páteční uzávěrka týdne</h2>
+          <div class="history-controls" aria-label="Historie týdenních revizí">
+            <label for="week-select">Historie týdnů</label>
+            <select id="week-select"></select>
+            <button class="secondary-action compact-action" type="button" id="current-week">Aktuální týden</button>
+          </div>
         </div>
 
         <div class="routine-grid" id="routine-grid"></div>
       </main>
 
       <footer class="footer">
-        <p>Stav se ukládá jen pro aktuální kalendářní týden v tomto prohlížeči. Další týden začne čistým checklistem.</p>
+        <p>Checklist a reflexní zápisy se ukládají podle jednotlivých týdnů v tomto prohlížeči. Další týden začne čistým checklistem a starší týdny najdeš v historii.</p>
       </footer>
     </div>
 
@@ -107,9 +112,13 @@
           <span class="task-text"></span>
         </label>
         <p class="task-note"></p>
+        <label class="reflection-field">
+          <span>Zápis k tomuto bodu</span>
+          <textarea rows="4" placeholder="Doplň vlastní poznámku pro tento týden..."></textarea>
+        </label>
       </article>
     </template>
 
-    <script src="app.js?v=20260606-1024"></script>
+    <script src="app.js?v=20260606-1035"></script>
   </body>
 </html>

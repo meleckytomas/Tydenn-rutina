@@ -51,6 +51,8 @@ body {
 }
 
 button,
+select,
+textarea,
 input {
   font: inherit;
 }
@@ -313,6 +315,44 @@ h1 {
   letter-spacing: 0;
 }
 
+.history-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.history-controls label,
+.reflection-field span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.history-controls label {
+  flex-basis: 100%;
+}
+
+select {
+  min-height: 42px;
+  min-width: min(100%, 340px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 12px;
+  font-weight: 700;
+}
+
+.compact-action {
+  min-height: 42px;
+  padding-right: 14px;
+  padding-left: 14px;
+}
+
 .routine-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -426,6 +466,30 @@ h1 {
   line-height: 1.55;
 }
 
+.reflection-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 104px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 11px 12px;
+  line-height: 1.45;
+}
+
+select:focus,
+textarea:focus {
+  border-color: var(--blue);
+  outline: 3px solid color-mix(in srgb, var(--blue) 18%, transparent);
+}
+
 .task-item:has(input:checked) .task-text {
   color: var(--green);
 }
@@ -514,5 +578,15 @@ h1 {
 
   .task-note {
     margin-left: 0;
+  }
+
+  .history-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  select,
+  .compact-action {
+    width: 100%;
   }
 }
