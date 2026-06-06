@@ -80,10 +80,6 @@ const routine = [
     title: "Zdraví a energie",
     tasks: [
       {
-        text: "Vyhodnotit uplynulý týden",
-        note: "Co fungovalo, co nefungovalo, jaká byla energie a pracovní vytížení."
-      },
-      {
         text: "Zkontrolovat rehabilitaci Achillovky",
         note: "Průběh léčby, cvičení, fyzioterapie a plán na další týden."
       },
