@@ -206,24 +206,17 @@ function renderRoutine() {
       const taskState = state[id] || {};
       const taskNode = taskTemplate.content.firstElementChild.cloneNode(true);
       const checkbox = taskNode.querySelector("input");
-      const textarea = taskNode.querySelector("textarea");
 
       checkbox.id = `${id}-done`;
       checkbox.checked = Boolean(taskState.done);
       taskNode.querySelector(".task-check").setAttribute("for", checkbox.id);
       taskNode.querySelector(".task-text").textContent = task.text;
       taskNode.querySelector(".task-note").textContent = task.note;
-      textarea.value = taskState.note || "";
 
       checkbox.addEventListener("change", () => {
         state[id] = { ...state[id], done: checkbox.checked };
         saveState();
         updateProgress();
-      });
-
-      textarea.addEventListener("input", () => {
-        state[id] = { ...state[id], note: textarea.value };
-        saveState();
       });
 
       taskList.append(taskNode);
@@ -254,9 +247,6 @@ function resetCurrentWeek() {
   localStorage.removeItem(stateKey);
   document.querySelectorAll(".task-check input").forEach((checkbox) => {
     checkbox.checked = false;
-  });
-  document.querySelectorAll("textarea").forEach((textarea) => {
-    textarea.value = "";
   });
   updateProgress();
 }

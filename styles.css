@@ -51,7 +51,6 @@ body {
 }
 
 button,
-textarea,
 input {
   font: inherit;
 }
@@ -425,36 +424,6 @@ h1 {
   color: var(--muted);
   font-size: 0.92rem;
   line-height: 1.55;
-}
-
-.note-field {
-  display: grid;
-  gap: 7px;
-}
-
-.note-field span {
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-textarea {
-  width: 100%;
-  min-height: 82px;
-  resize: vertical;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
-  padding: 11px 12px;
-  line-height: 1.45;
-}
-
-textarea:focus {
-  border-color: var(--blue);
-  outline: 3px solid color-mix(in srgb, var(--blue) 18%, transparent);
 }
 
 .task-item:has(input:checked) .task-text {
