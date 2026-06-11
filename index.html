@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260606-1035">
+    <link rel="stylesheet" href="styles.css?v=20260611-001">
   </head>
   <body>
     <div class="app-shell">
@@ -84,13 +84,44 @@
             <select id="week-select"></select>
             <button class="secondary-action compact-action" type="button" id="current-week">Aktuální týden</button>
           </div>
+          <details class="sync-panel">
+            <summary>GitHub ukládání historie</summary>
+            <div class="sync-grid">
+              <label>
+                <span>Owner</span>
+                <input id="github-owner" type="text" value="meleckytomas" autocomplete="off">
+              </label>
+              <label>
+                <span>Soukromý data repozitář</span>
+                <input id="github-repo" type="text" value="Tydenn-rutina-data" autocomplete="off">
+              </label>
+              <label>
+                <span>Větev</span>
+                <input id="github-branch" type="text" value="main" autocomplete="off">
+              </label>
+              <label>
+                <span>Soubor historie</span>
+                <input id="github-path" type="text" value="weekly-routine-history.json" autocomplete="off">
+              </label>
+              <label class="sync-token">
+                <span>GitHub token</span>
+                <input id="github-token" type="password" placeholder="Fine-grained token pro soukromý data repozitář" autocomplete="off">
+              </label>
+              <div class="sync-actions">
+                <button class="secondary-action compact-action" type="button" id="save-github-settings">Uložit nastavení</button>
+                <button class="secondary-action compact-action" type="button" id="pull-github-history">Načíst z GitHubu</button>
+                <button class="primary-action compact-action" type="button" id="push-github-history">Uložit na GitHub</button>
+              </div>
+              <p class="sync-status" id="sync-status">GitHub ukládání není nastavené.</p>
+            </div>
+          </details>
         </div>
 
         <div class="routine-grid" id="routine-grid"></div>
       </main>
 
       <footer class="footer">
-        <p>Checklist a reflexní zápisy se ukládají podle jednotlivých týdnů v tomto prohlížeči. Další týden začne čistým checklistem a starší týdny najdeš v historii.</p>
+        <p>Checklist a reflexní zápisy se ukládají podle jednotlivých týdnů. Lokálně fungují hned; po nastavení GitHub ukládání se historie synchronizuje do soukromého repozitáře.</p>
       </footer>
     </div>
 
@@ -119,6 +150,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260606-1035"></script>
+    <script src="app.js?v=20260611-001"></script>
   </body>
 </html>

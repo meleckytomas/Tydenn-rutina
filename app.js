@@ -145,14 +145,26 @@ const resetButton = document.querySelector("#reset-week");
 const themeToggle = document.querySelector("#theme-toggle");
 const weekSelect = document.querySelector("#week-select");
 const currentWeekButton = document.querySelector("#current-week");
+const githubOwnerInput = document.querySelector("#github-owner");
+const githubRepoInput = document.querySelector("#github-repo");
+const githubBranchInput = document.querySelector("#github-branch");
+const githubPathInput = document.querySelector("#github-path");
+const githubTokenInput = document.querySelector("#github-token");
+const saveGithubSettingsButton = document.querySelector("#save-github-settings");
+const pullGithubHistoryButton = document.querySelector("#pull-github-history");
+const pushGithubHistoryButton = document.querySelector("#push-github-history");
+const syncStatus = document.querySelector("#sync-status");
 
 const currentWeekKey = getIsoWeekKey(new Date());
 const weekIndexKey = "weekly-routine:weeks";
+const githubConfigKey = "weekly-routine:github-config";
+const githubTokenKey = "weekly-routine:github-token";
 const themeKey = "weekly-routine:theme";
 const ringLength = 314;
 
 let selectedWeekKey = currentWeekKey;
 let state = loadState();
+let pendingSyncTimer = null;
 
 function getIsoWeekKey(date) {
   const normalized = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -209,6 +221,7 @@ function saveState() {
   localStorage.setItem(getStateKey(selectedWeekKey), JSON.stringify(state));
   saveWeekToIndex(selectedWeekKey);
   renderWeekOptions();
+  scheduleGitHubSync();
 }
 
 function getWeekIndex() {
@@ -303,6 +316,211 @@ function switchWeek(weekKey) {
   updateProgress();
 }
 
+function encodeBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function decodeBase64(text) {
+  const binary = atob(text.replace(/\n/g, ""));
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function getGithubConfig() {
+  return {
+    owner: githubOwnerInput.value.trim(),
+    repo: githubRepoInput.value.trim(),
+    branch: githubBranchInput.value.trim() || "main",
+    path: githubPathInput.value.trim() || "weekly-routine-history.json",
+    token: githubTokenInput.value.trim()
+  };
+}
+
+function hasGithubConfig() {
+  const config = getGithubConfig();
+  return Boolean(config.owner && config.repo && config.branch && config.path && config.token);
+}
+
+function loadGithubSettings() {
+  try {
+    const config = JSON.parse(localStorage.getItem(githubConfigKey)) || {};
+    githubOwnerInput.value = config.owner || "meleckytomas";
+    githubRepoInput.value = config.repo || "Tydenn-rutina-data";
+    githubBranchInput.value = config.branch || "main";
+    githubPathInput.value = config.path || "weekly-routine-history.json";
+    githubTokenInput.value = localStorage.getItem(githubTokenKey) || "";
+  } catch {
+    githubOwnerInput.value = "meleckytomas";
+    githubRepoInput.value = "Tydenn-rutina-data";
+    githubBranchInput.value = "main";
+    githubPathInput.value = "weekly-routine-history.json";
+  }
+
+  updateSyncStatus(hasGithubConfig() ? "GitHub ukládání je připravené." : "GitHub ukládání není nastavené.");
+}
+
+function saveGithubSettings() {
+  const config = getGithubConfig();
+  const publicConfig = {
+    owner: config.owner,
+    repo: config.repo,
+    branch: config.branch,
+    path: config.path
+  };
+
+  localStorage.setItem(githubConfigKey, JSON.stringify(publicConfig));
+  localStorage.setItem(githubTokenKey, config.token);
+  updateSyncStatus(hasGithubConfig() ? "Nastavení GitHub ukládání je uložené." : "Doplň owner, repo, větev, cestu a token.");
+}
+
+function updateSyncStatus(message) {
+  syncStatus.textContent = message;
+}
+
+function buildHistoryPayload() {
+  const weeks = new Set(getWeekIndex());
+  weeks.add(currentWeekKey);
+  weeks.add(selectedWeekKey);
+
+  const states = {};
+  [...weeks].sort().forEach((weekKey) => {
+    states[weekKey] = weekKey === selectedWeekKey ? state : loadState(weekKey);
+  });
+
+  return {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    currentWeekKey,
+    weeks: states
+  };
+}
+
+function importHistoryPayload(payload) {
+  if (!payload || typeof payload.weeks !== "object") {
+    throw new Error("Soubor historie nemá očekávaný formát.");
+  }
+
+  const weekKeys = Object.keys(payload.weeks).sort().reverse();
+  weekKeys.forEach((weekKey) => {
+    localStorage.setItem(getStateKey(weekKey), JSON.stringify(payload.weeks[weekKey] || {}));
+  });
+  localStorage.setItem(weekIndexKey, JSON.stringify(weekKeys));
+
+  state = loadState(selectedWeekKey);
+  renderWeekOptions();
+  renderRoutine();
+  updateProgress();
+}
+
+async function getRemoteHistoryFile(config) {
+  const encodedPath = config.path.split("/").map(encodeURIComponent).join("/");
+  const url = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encodedPath}?ref=${encodeURIComponent(config.branch)}`;
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${config.token}`,
+      "X-GitHub-Api-Version": "2022-11-28"
+    }
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`GitHub vrátil chybu ${response.status}.`);
+  }
+
+  return response.json();
+}
+
+async function pullGithubHistory() {
+  saveGithubSettings();
+  const config = getGithubConfig();
+
+  if (!hasGithubConfig()) {
+    updateSyncStatus("Nejdřív doplň GitHub nastavení.");
+    return;
+  }
+
+  updateSyncStatus("Načítám historii z GitHubu...");
+  const file = await getRemoteHistoryFile(config);
+
+  if (!file) {
+    updateSyncStatus("Na GitHubu zatím není soubor historie.");
+    return;
+  }
+
+  const payload = JSON.parse(decodeBase64(file.content));
+  importHistoryPayload(payload);
+  updateSyncStatus(`Historie načtena z GitHubu: ${new Date().toLocaleTimeString("cs-CZ")}.`);
+}
+
+async function pushGithubHistory({ silent = false } = {}) {
+  saveGithubSettings();
+  const config = getGithubConfig();
+
+  if (!hasGithubConfig()) {
+    if (!silent) {
+      updateSyncStatus("Nejdřív doplň GitHub nastavení.");
+    }
+    return;
+  }
+
+  if (!silent) {
+    updateSyncStatus("Ukládám historii na GitHub...");
+  }
+
+  const file = await getRemoteHistoryFile(config);
+  const payload = buildHistoryPayload();
+  const encodedPath = config.path.split("/").map(encodeURIComponent).join("/");
+  const url = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encodedPath}`;
+  const body = {
+    message: `Update weekly routine history ${new Date().toISOString()}`,
+    content: encodeBase64(JSON.stringify(payload, null, 2)),
+    branch: config.branch
+  };
+
+  if (file?.sha) {
+    body.sha = file.sha;
+  }
+
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${config.token}`,
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub uložení selhalo: ${response.status}.`);
+  }
+
+  updateSyncStatus(`Historie uložena na GitHub: ${new Date().toLocaleTimeString("cs-CZ")}.`);
+}
+
+function scheduleGitHubSync() {
+  if (!hasGithubConfig()) {
+    return;
+  }
+
+  clearTimeout(pendingSyncTimer);
+  pendingSyncTimer = setTimeout(() => {
+    pushGithubHistory({ silent: true }).catch((error) => {
+      updateSyncStatus(error.message);
+    });
+  }, 4000);
+}
+
 function updateProgress() {
   const checkboxes = [...document.querySelectorAll(".task-check input")];
   const done = checkboxes.filter((checkbox) => checkbox.checked).length;
@@ -345,6 +563,7 @@ function initializeTheme() {
 saveWeekToIndex(currentWeekKey);
 weekLabel.textContent = getReadableWeek(new Date());
 initializeTheme();
+loadGithubSettings();
 renderWeekOptions();
 renderRoutine();
 updateProgress();
@@ -352,6 +571,13 @@ updateProgress();
 resetButton.addEventListener("click", resetCurrentWeek);
 weekSelect.addEventListener("change", () => switchWeek(weekSelect.value));
 currentWeekButton.addEventListener("click", () => switchWeek(currentWeekKey));
+saveGithubSettingsButton.addEventListener("click", saveGithubSettings);
+pullGithubHistoryButton.addEventListener("click", () => {
+  pullGithubHistory().catch((error) => updateSyncStatus(error.message));
+});
+pushGithubHistoryButton.addEventListener("click", () => {
+  pushGithubHistory().catch((error) => updateSyncStatus(error.message));
+});
 themeToggle.addEventListener("click", () => {
   const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
   applyTheme(current === "dark" ? "light" : "dark");

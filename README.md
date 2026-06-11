@@ -4,9 +4,22 @@ Statická HTML stránka pro páteční týdenní revizi.
 
 ## Jak to funguje
 
-- Checklist a poznámky se ukládají do `localStorage` v prohlížeči.
+- Checklist a reflexní zápisy se ukládají do `localStorage` v prohlížeči.
 - Klíč ukládání obsahuje aktuální ISO týden, takže každý další týden začne stránka s prázdnými checkboxy.
-- Historie z minulých týdnů zůstává jen v daném prohlížeči. Není synchronizovaná mezi zařízeními.
+- Historie z minulých týdnů je dostupná přes výběr týdne.
+- Po nastavení GitHub ukládání se historie synchronizuje do soukromého GitHub repozitáře.
+
+## Trvalé GitHub ukládání
+
+Doporučené nastavení:
+
+1. Nech tento repozitář veřejný, pokud ho používáš pro GitHub Pages.
+2. Vytvoř samostatný soukromý repozitář například `Tydenn-rutina-data`.
+3. V GitHubu vytvoř fine-grained token pouze pro tento soukromý repozitář s oprávněním `Contents: Read and write`.
+4. Ve stránce otevři `GitHub ukládání historie`, doplň owner, repo, větev, soubor a token.
+5. Klikni na `Uložit nastavení` a potom `Uložit na GitHub`.
+
+Token se neukládá do kódu ani do repozitáře, jen lokálně v daném prohlížeči.
 
 ## GitHub Pages
 
