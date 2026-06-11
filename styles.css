@@ -426,6 +426,83 @@ select {
   margin: 0 auto;
 }
 
+.reflection-history {
+  max-width: 860px;
+  margin: 34px auto 0;
+}
+
+.history-heading {
+  margin-bottom: 18px;
+}
+
+.reflection-history-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.history-group {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.history-group h3 {
+  margin-bottom: 6px;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.history-group-note {
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.history-entry-list {
+  display: grid;
+  gap: 10px;
+}
+
+.history-entry,
+.history-empty {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.history-entry {
+  padding: 13px 14px;
+}
+
+.history-week {
+  margin-bottom: 8px;
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.history-text {
+  margin-bottom: 0;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.history-empty {
+  padding: 13px 14px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.reflection-history + .routine-grid {
+  margin-top: 34px;
+}
+
 .routine-section {
   padding: 20px;
   border: 1px solid var(--line);
@@ -596,7 +673,8 @@ textarea:focus,
   .topbar,
   .hero-grid,
   .section-heading,
-  .routine-grid {
+  .routine-grid,
+  .reflection-history {
     width: calc(100vw - 48px);
     max-width: calc(100vw - 48px);
     margin-right: auto;

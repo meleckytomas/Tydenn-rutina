@@ -134,6 +134,7 @@ const routine = [
 ];
 
 const grid = document.querySelector("#routine-grid");
+const reflectionHistoryGrid = document.querySelector("#reflection-history-grid");
 const sectionTemplate = document.querySelector("#section-template");
 const taskTemplate = document.querySelector("#task-template");
 const weekLabel = document.querySelector("#week-label");
@@ -242,6 +243,27 @@ function taskId(sectionIndex, taskIndex) {
   return `s${sectionIndex + 1}-t${taskIndex + 1}`;
 }
 
+function getReflectionTasks() {
+  const sectionIndex = routine.findIndex((section) => section.title === "Reflexe");
+
+  if (sectionIndex === -1) {
+    return [];
+  }
+
+  return routine[sectionIndex].tasks.map((task, taskIndex) => ({
+    id: taskId(sectionIndex, taskIndex),
+    text: task.text,
+    note: task.note
+  }));
+}
+
+function getKnownWeekKeys() {
+  const weeks = new Set(getWeekIndex());
+  weeks.add(currentWeekKey);
+  weeks.add(selectedWeekKey);
+  return [...weeks].sort().reverse();
+}
+
 function renderRoutine() {
   grid.innerHTML = "";
 
@@ -272,6 +294,7 @@ function renderRoutine() {
         textarea.addEventListener("input", () => {
           state[id] = { ...state[id], reflection: textarea.value };
           saveState();
+          renderReflectionHistory();
         });
       } else {
         reflectionField.remove();
@@ -307,12 +330,71 @@ function renderWeekOptions() {
   weekSelect.value = selectedWeekKey;
 }
 
+function renderReflectionHistory() {
+  const reflectionTasks = getReflectionTasks();
+  const weekKeys = getKnownWeekKeys();
+  reflectionHistoryGrid.innerHTML = "";
+
+  reflectionTasks.forEach((task) => {
+    const group = document.createElement("section");
+    group.className = "history-group";
+
+    const title = document.createElement("h3");
+    title.textContent = task.text;
+
+    const note = document.createElement("p");
+    note.className = "history-group-note";
+    note.textContent = task.note;
+
+    const entries = document.createElement("div");
+    entries.className = "history-entry-list";
+
+    let hasEntries = false;
+
+    weekKeys.forEach((weekKey) => {
+      const weekState = weekKey === selectedWeekKey ? state : loadState(weekKey);
+      const reflection = (weekState[task.id]?.reflection || "").trim();
+
+      if (!reflection) {
+        return;
+      }
+
+      hasEntries = true;
+
+      const entry = document.createElement("article");
+      entry.className = "history-entry";
+
+      const week = document.createElement("p");
+      week.className = "history-week";
+      week.textContent = `${weekKey} · ${getReadableWeek(getDateFromIsoWeekKey(weekKey))}`;
+
+      const text = document.createElement("p");
+      text.className = "history-text";
+      text.textContent = reflection;
+
+      entry.append(week, text);
+      entries.append(entry);
+    });
+
+    if (!hasEntries) {
+      const empty = document.createElement("p");
+      empty.className = "history-empty";
+      empty.textContent = "Zatím bez zápisů.";
+      entries.append(empty);
+    }
+
+    group.append(title, note, entries);
+    reflectionHistoryGrid.append(group);
+  });
+}
+
 function switchWeek(weekKey) {
   selectedWeekKey = weekKey;
   state = loadState(selectedWeekKey);
   weekLabel.textContent = getReadableWeek(getDateFromIsoWeekKey(selectedWeekKey));
   renderWeekOptions();
   renderRoutine();
+  renderReflectionHistory();
   updateProgress();
 }
 
@@ -350,13 +432,13 @@ function loadGithubSettings() {
   try {
     const config = JSON.parse(localStorage.getItem(githubConfigKey)) || {};
     githubOwnerInput.value = config.owner || "meleckytomas";
-    githubRepoInput.value = config.repo || "Tydenn-rutina-data";
+    githubRepoInput.value = config.repo || "T-denni-rutina-data";
     githubBranchInput.value = config.branch || "main";
     githubPathInput.value = config.path || "weekly-routine-history.json";
     githubTokenInput.value = localStorage.getItem(githubTokenKey) || "";
   } catch {
     githubOwnerInput.value = "meleckytomas";
-    githubRepoInput.value = "Tydenn-rutina-data";
+    githubRepoInput.value = "T-denni-rutina-data";
     githubBranchInput.value = "main";
     githubPathInput.value = "weekly-routine-history.json";
   }
@@ -414,6 +496,7 @@ function importHistoryPayload(payload) {
   state = loadState(selectedWeekKey);
   renderWeekOptions();
   renderRoutine();
+  renderReflectionHistory();
   updateProgress();
 }
 
@@ -541,6 +624,7 @@ function resetCurrentWeek() {
   state = {};
   localStorage.removeItem(getStateKey(selectedWeekKey));
   renderRoutine();
+  renderReflectionHistory();
   updateProgress();
 }
 
@@ -566,6 +650,7 @@ initializeTheme();
 loadGithubSettings();
 renderWeekOptions();
 renderRoutine();
+renderReflectionHistory();
 updateProgress();
 
 resetButton.addEventListener("click", resetCurrentWeek);

@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260611-001">
+    <link rel="stylesheet" href="styles.css?v=20260611-002">
   </head>
   <body>
     <div class="app-shell">
@@ -80,7 +80,7 @@
           <p class="eyebrow">Checklist</p>
           <h2>Páteční uzávěrka týdne</h2>
           <div class="history-controls" aria-label="Historie týdenních revizí">
-            <label for="week-select">Historie týdnů</label>
+            <label for="week-select">Týden pro editaci</label>
             <select id="week-select"></select>
             <button class="secondary-action compact-action" type="button" id="current-week">Aktuální týden</button>
           </div>
@@ -93,7 +93,7 @@
               </label>
               <label>
                 <span>Soukromý data repozitář</span>
-                <input id="github-repo" type="text" value="Tydenn-rutina-data" autocomplete="off">
+                <input id="github-repo" type="text" value="T-denni-rutina-data" autocomplete="off">
               </label>
               <label>
                 <span>Větev</span>
@@ -116,6 +116,14 @@
             </div>
           </details>
         </div>
+
+        <section class="reflection-history" aria-labelledby="reflection-history-title">
+          <div class="section-heading history-heading">
+            <p class="eyebrow">Historie</p>
+            <h2 id="reflection-history-title">Historie reflexe</h2>
+          </div>
+          <div class="reflection-history-grid" id="reflection-history-grid"></div>
+        </section>
 
         <div class="routine-grid" id="routine-grid"></div>
       </main>
@@ -150,6 +158,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20260611-001"></script>
+    <script src="app.js?v=20260611-003"></script>
   </body>
 </html>
